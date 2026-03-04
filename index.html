@@ -1,25 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Mice | End-to-End Event Management</title>
+    <title>E-Mice | Event Management Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #07080c;
-            --bg-surface: #0d0f14;
-            --bg-card: #12151c;
-            --fg-primary: #f4f4f7;
-            --fg-muted: #8a8d95;
-            --fg-dim: #4a4d55;
+            --bg-deep: #05060a;
+            --bg-surface: #0a0c12;
+            --bg-card: #0f1218;
+            --fg-primary: #ffffff;
+            --fg-muted: #8b8e96;
+            --fg-dim: #45474e;
             --accent-cyan: #00e5ff;
-            --accent-cyan-dim: rgba(0, 229, 255, 0.15);
+            --accent-cyan-dim: rgba(0, 229, 255, 0.1);
             --accent-coral: #ff5e3a;
             --accent-gold: #ffc857;
-            --border: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(10, 12, 18, 0.7);
+            --btn-shadow: #0097a7;
+        }
+
+        [data-theme="light"] {
+            --bg-deep: #F8F9FB;
+            --bg-surface: #FFFFFF;
+            --bg-card: #FFFFFF;
+            --fg-primary: #0A0C10;
+            --fg-muted: #5A5F6A;
+            --fg-dim: #A0A4AB;
+            --accent-cyan: #007a8a;
+            --accent-cyan-dim: rgba(0, 122, 138, 0.08);
+            --accent-coral: #D94B2F;
+            --accent-gold: #B8860B;
+            --border: rgba(0, 0, 0, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --btn-shadow: #005F6A;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,465 +48,449 @@
             color: var(--fg-primary);
             overflow-x: hidden;
             line-height: 1.6;
+            transition: background 0.5s ease, color 0.3s ease;
         }
 
-        /* Typography */
-        .hero-headline {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: clamp(2rem, 7vw, 5.5rem);
-            line-height: 0.95;
-            letter-spacing: -0.04em;
-            text-transform: uppercase;
-        }
-        .section-title {
-            font-family: 'Syne', sans-serif;
-            font-weight: 700;
-            font-size: clamp(2rem, 5vw, 4.5rem);
-            line-height: 1.05;
-            letter-spacing: -0.03em;
-        }
+        h1, h2, h3, h4 { font-family: 'Syne', sans-serif; }
+        .hero-headline { font-weight: 800; font-size: clamp(2.2rem, 7vw, 5.5rem); line-height: 0.95; letter-spacing: -0.04em; text-transform: uppercase; }
+        .section-title { font-weight: 700; font-size: clamp(2rem, 5vw, 4.5rem); line-height: 1.05; letter-spacing: -0.03em; }
 
-        /* Canvas Background - Hidden on mobile for performance */
-        #canvas-bg {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
+        /* --- SPLASH SCREEN --- */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-deep); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            overflow: hidden; transition: opacity 0.8s ease, visibility 0.8s ease;
         }
-        @media (max-width: 768px) { #canvas-bg { display: none; } }
+        .splash-content { position: relative; z-index: 2; text-align: center; }
+        .splash-logo-text { 
+            font-family: 'Syne', sans-serif; font-size: 5rem; font-weight: 800; color: var(--fg-primary); 
+            margin-bottom: 1rem; letter-spacing: -3px;
+            animation: textGlitch 3s infinite alternate;
+        }
+        .splash-logo-text span { color: var(--accent-cyan); }
+        .splash-tagline {
+            font-size: 1rem; letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--fg-muted); opacity: 0; animation: fadeInUp 1s ease 1s forwards;
+        }
+        .splash-loader {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            animation: loadingBar 3s ease-in-out forwards;
+        }
+        .splash-geo {
+            position: absolute; width: 200px; height: 200px; border: 1px solid var(--border); border-radius: 50%; opacity: 0.1;
+        }
+        .geo-1 { top: 10%; left: 10%; animation: rotateGeo 10s linear infinite; }
+        .geo-2 { bottom: 20%; right: 15%; width: 300px; height: 300px; animation: rotateGeo 15s linear infinite reverse; }
 
-        /* Blobs - Heavy Blur (100px) */
-        .blob-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .morphing-blob {
-            position: absolute;
-            /* CHANGED: Increased blur to 100px */
-            filter: blur(100px); 
-            opacity: 0.6;
-            will-change: transform, border-radius;
-        }
-        .blob-1 {
-            width: clamp(300px, 50vw, 600px); height: clamp(300px, 50vw, 600px);
-            top: -10%; right: -10%;
-            background: linear-gradient(135deg, var(--accent-cyan), transparent);
-            animation: morphBlob1 20s ease-in-out infinite alternate;
-        }
-        .blob-2 {
-            width: clamp(250px, 40vw, 500px); height: clamp(250px, 40vw, 500px);
-            bottom: -10%; left: -10%;
-            background: linear-gradient(45deg, var(--accent-coral), transparent);
-            animation: morphBlob2 20s ease-in-out infinite alternate-reverse;
-        }
-        @keyframes morphBlob1 { 0% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: translate(0,0); } 100% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: translate(20px, 20px); } }
-        @keyframes morphBlob2 { 0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(0,0); } 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: translate(-20px, -20px); } }
-        
-        /* Hide blobs on mobile */
+        @keyframes loadingBar { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+        @keyframes textGlitch { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); text-shadow: 0 0 20px var(--accent-cyan); } }
+        @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes rotateGeo { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #splash-screen.hide { opacity: 0; visibility: hidden; }
+
+        /* Background Effects */
+        #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; transition: opacity 0.5s; }
+        [data-theme="light"] #canvas-bg { opacity: 0.2; }
+        .blob-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: hidden; }
+        [data-theme="light"] .blob-container { opacity: 0.3; }
+        .morphing-blob { position: absolute; filter: blur(80px); opacity: 0.7; will-change: transform; }
+        .blob-1 { width: 50vw; height: 50vw; top: -10%; right: -10%; background: linear-gradient(135deg, var(--accent-cyan), transparent); animation: floatBlob 20s ease-in-out infinite alternate; }
+        .blob-2 { width: 40vw; height: 40vw; bottom: -10%; left: -10%; background: linear-gradient(45deg, var(--accent-coral), transparent); animation: floatBlob 25s ease-in-out infinite alternate-reverse; }
+        @keyframes floatBlob { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
         @media (max-width: 768px) { .blob-container { display: none; } }
 
-        /* Grid Overlay */
-        .geo-grid {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
-            pointer-events: none; opacity: 0.04;
-            background-image: linear-gradient(var(--accent-cyan) 1px, transparent 1px), linear-gradient(90deg, var(--accent-cyan) 1px, transparent 1px);
-            background-size: 80px 80px;
-        }
-
-        /* Navigation */
+        /* --- NAVBAR --- */
         nav {
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
-            padding: 1rem 5%;
-            display: flex; justify-content: space-between; align-items: center;
-            background: transparent;
-            transition: background 0.2s ease;
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 96%; max-width: 1400px; padding: 0.8rem 2rem;
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            border-radius: 50px; transition: all 0.3s ease; background: transparent;
         }
-        nav.scrolled { background: rgba(7, 8, 12, 0.95); border-bottom: 1px solid var(--border); }
-
-        /* Mobile Nav Toggle */
-        .nav-toggle { display: none; background: none; border: none; width: 30px; height: 24px; position: relative; cursor: pointer; z-index: 102; }
-        .nav-toggle span { display: block; position: absolute; height: 2px; width: 100%; background: var(--fg-primary); transition: .2s ease-in-out; }
-        .nav-toggle span:nth-child(1) { top: 0px; }
-        .nav-toggle span:nth-child(2) { top: 10px; }
-        .nav-toggle span:nth-child(3) { top: 20px; }
-        nav.nav-open .nav-toggle span:nth-child(1) { top: 10px; transform: rotate(135deg); }
-        nav.nav-open .nav-toggle span:nth-child(2) { opacity: 0; left: -60px; }
-        nav.nav-open .nav-toggle span:nth-child(3) { top: 10px; transform: rotate(-135deg); }
-
-        /* Desktop Nav */
-        .logo { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; z-index: 101; }
-        .logo-img { height: 42px; width: auto; }
-        .nav-links { display: flex; gap: 2.5rem; list-style: none; transition: all 0.2s ease; }
-        .nav-links a { color: var(--fg-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.1s ease; position: relative; }
+        nav.scrolled {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--border);
+        }
+        .logo { display: flex; gap: 0.5rem; text-decoration: none; z-index: 101; }
+        .logo-img { height: 36px; width: auto; }
+        
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { color: var(--fg-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
         .nav-links a:hover { color: var(--fg-primary); }
         
-        .nav-cta {
-            padding: 0.75rem 1.5rem;
-            background: transparent; border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            font-family: 'Space Grotesk', sans-serif; font-weight: 600;
-            font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;
-            cursor: pointer; transition: all 0.1s ease;
-            position: relative; overflow: hidden; z-index: 101;
+        .nav-actions { display: flex; gap: 1rem; align-items: center; }
+        .nav-toggle { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; z-index: 102; padding: 5px; }
+        .nav-toggle span { display: block; width: 24px; height: 2px; background: var(--fg-primary); transition: all 0.3s ease; }
+        
+        .mobile-menu-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--bg-deep); z-index: 99;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transform: translateY(-100%); opacity: 0; transition: transform 0.5s cubic-bezier(0.77,0,0.175,1), opacity 0.5s ease; pointer-events: none;
         }
-        .nav-cta::before {
-            content: ''; position: absolute; top: 0; left: -100%;
-            width: 100%; height: 100%; background: var(--accent-cyan);
-            transition: left 0.2s ease; z-index: -1;
+        .mobile-menu-overlay.active { transform: translateY(0); opacity: 1; pointer-events: all; }
+        .mobile-menu-links { display: flex; flex-direction: column; align-items: center; gap: 2rem; margin-bottom: 3rem; }
+        .mobile-menu-links a { font-family: 'Syne', sans-serif; font-size: 2rem; color: var(--fg-primary); text-decoration: none; }
+        
+        @media (max-width: 900px) {
+            .nav-links, .nav-actions.desktop-only { display: none; }
+            .nav-toggle { display: flex; }
         }
-        .nav-cta:hover { color: var(--bg-deep); }
-        .nav-cta:hover::before { left: 0; }
 
-        /* Mobile Nav Styles */
-        @media (max-width: 768px) {
-            .nav-toggle { display: block; }
-            .logo { position: absolute; left: 50%; transform: translateX(-50%); }
-            
-            .nav-links {
-                position: absolute; top: 100%; left: 0; width: 100%;
-                background: rgba(7, 8, 12, 0.98);
-                flex-direction: column; align-items: center; padding: 2rem 0;
-                gap: 2rem; border-bottom: 1px solid var(--border);
-                transform: translateY(-150%); opacity: 0;
-            }
-            nav.nav-open .nav-links { transform: translateY(0); opacity: 1; }
-            .nav-cta { display: none; }
+        /* --- BUTTONS --- */
+        .btn-3d {
+            display: inline-block; padding: 0.9rem 1.8rem;
+            font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; border: none; cursor: pointer;
+            color: var(--bg-deep); background: var(--accent-cyan);
+            position: relative; transform: translateY(0);
+            box-shadow: 0 5px 0 var(--btn-shadow), 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.1s ease, box-shadow 0.1s ease; outline: none;
         }
+        .btn-3d:hover { transform: translateY(-4px); box-shadow: 0 9px 0 var(--btn-shadow), 0 15px 30px rgba(0,0,0,0.3); }
+        .btn-3d:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--btn-shadow), 0 5px 10px rgba(0,0,0,0.2); }
+        
+        .btn-3d.secondary { background: transparent; color: var(--fg-primary); border: 1px solid var(--fg-dim); box-shadow: 0 5px 0 transparent; }
+        .btn-3d.secondary:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); box-shadow: 0 9px 0 transparent; }
+
+        .toggle-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--fg-primary); padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.8rem; border-radius: 20px; transition: all 0.2s; display: flex; align-items: center; gap: 0.3rem; }
+        .toggle-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 
         /* Sections */
         section { position: relative; z-index: 10; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 5%; }
 
         /* Hero */
-        .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 7rem 5% 5rem; position: relative; }
-        .hero-content { max-width: 1400px; margin: 0 auto; width: 100%; }
-        
-        /* OPTIMIZED: Faster transitions (0.2s) */
-        .hero-eyebrow { display: inline-flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; opacity: 0; transform: translateY(10px); animation: heroFadeUp 0.2s ease-out forwards 0.1s; }
-        .eyebrow-line { width: 40px; height: 1px; background: var(--accent-cyan); }
-        .eyebrow-text { font-size: 0.8rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-cyan); }
-        
-        .hero-headline { margin-bottom: 1.5rem; opacity: 0; transform: translateY(10px); animation: heroFadeUp 0.2s ease-out forwards 0.15s; }
-        .hero-headline .line { display: block; overflow: hidden; }
-        .hero-headline .word { display: inline-block; transition: all 0.1s ease; }
-        .hero-headline .word:hover { transform: translateY(-3px); color: var(--accent-cyan); }
-        .hero-headline .accent { color: var(--accent-cyan); text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
-        
-        .hero-subtext { max-width: 600px; font-size: clamp(1rem, 2vw, 1.25rem); color: var(--fg-muted); margin-bottom: 2.5rem; opacity: 0; transform: translateY(10px); animation: heroFadeUp 0.2s ease-out forwards 0.2s; }
-        .hero-actions { display: flex; flex-wrap: wrap; gap: 1rem; opacity: 0; transform: translateY(10px); animation: heroFadeUp 0.2s ease-out forwards 0.25s; }
-
-        /* OPTIMIZED Animation Class */
-        .anim-fade-up { opacity: 0; transform: translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out; }
-        .anim-fade-up.visible { opacity: 1; transform: translateY(0); }
+        .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-top: 80px; }
+        .hero-eyebrow { display: inline-flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; opacity: 0; animation: heroFadeUp 0.3s ease-out forwards 0.1s; }
+        .hero-headline { margin-bottom: 1.5rem; opacity: 0; animation: heroFadeUp 0.3s ease-out forwards 0.15s; }
+        .hero-subtext { max-width: 650px; font-size: clamp(1rem, 2vw, 1.2rem); color: var(--fg-muted); margin-bottom: 2.5rem; opacity: 0; animation: heroFadeUp 0.3s ease-out forwards 0.2s; line-height: 1.7; }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 1rem; opacity: 0; animation: heroFadeUp 0.3s ease-out forwards 0.25s; }
         @keyframes heroFadeUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .anim-fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+        .anim-fade-up.visible { opacity: 1; transform: translateY(0); }
 
-        .btn-primary { padding: 1rem 2rem; background: var(--accent-cyan); color: var(--bg-deep); border: none; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.1s ease; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
-        .btn-secondary { padding: 1rem 2rem; background: transparent; color: var(--fg-primary); border: 1px solid var(--fg-dim); font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.95rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.1s ease; display: flex; align-items: center; gap: 0.5rem; }
-        .btn-secondary:hover { border-color: var(--fg-primary); }
-
-        /* Scroll Indicator */
-        .scroll-indicator { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; opacity: 0; animation: heroFadeUp 0.2s ease-out forwards 0.3s; }
-        .scroll-text { font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fg-dim); }
-        .scroll-line { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--accent-cyan), transparent); position: relative; }
-        .scroll-line::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 10px; background: var(--accent-cyan); animation: scrollDot 2s ease-in-out infinite; }
-        @keyframes scrollDot { 0% { top: 0; opacity: 1; } 100% { top: 40px; opacity: 0; } }
-
-        /* Stats Bar */
-        .stats-bar { padding: 3rem 5%; background: var(--bg-surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); position: relative; margin-top: 5rem; }
-        .stats-grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; text-align: center; }
-        .stat-number { font-family: 'Syne', sans-serif; font-weight: 800; font-size: clamp(2rem, 4vw, 2.5rem); color: var(--fg-primary); line-height: 1; margin-bottom: 0.5rem; display: inline-block; }
-        .stat-number .unit { font-size: 1rem; color: var(--accent-cyan); }
-        .stat-label { font-size: 0.85rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        /* Stats */
+        .stats-bar { padding: 4rem 0; background: var(--bg-surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 5rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; text-align: center; }
 
         /* Features */
-        .features { padding: 6rem 5%; position: relative; }
-        .features-header { max-width: 1400px; margin: 0 auto 4rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; align-items: end; }
-        .features-header p { color: var(--fg-muted); font-size: 1.1rem; line-height: 1.7; }
-        .features-grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-        .feature-card { background: var(--bg-card); border: 1px solid var(--border); padding: 1.5rem; position: relative; overflow: hidden; transition: all 0.15s ease; display: flex; flex-direction: column; justify-content: flex-start; min-height: 200px; }
-        .feature-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-coral)); transform: scaleX(0); transform-origin: left; transition: transform 0.2s ease; }
-        .feature-card:hover::before { transform: scaleX(1); }
+        .features { padding: 6rem 0; }
+        .features-header { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; align-items: end; margin-bottom: 4rem; }
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+        .feature-card { background: var(--bg-card); border: 1px solid var(--border); padding: 1.5rem; transition: all 0.15s ease; display: flex; flex-direction: column; min-height: 200px; }
         .feature-card:hover { border-color: var(--accent-cyan-dim); transform: translateY(-3px); }
         .feature-icon { width: 40px; height: 40px; margin-bottom: 1rem; }
-        .feature-icon svg { width: 100%; height: 100%; stroke: var(--accent-cyan); stroke-width: 1.5; fill: none; transition: all 0.1s ease; }
+        .feature-icon svg { width: 100%; height: 100%; stroke: var(--accent-cyan); stroke-width: 1.5; fill: none; transition: stroke 0.2s; }
         .feature-card:hover .feature-icon svg { stroke: var(--accent-coral); }
-        .feature-card .card-title { margin-bottom: 0.5rem; font-size: 1.1rem; transition: color 0.1s ease; }
-        .feature-card:hover .card-title { color: var(--accent-cyan); }
         .feature-card p { color: var(--fg-muted); font-size: 0.9rem; line-height: 1.5; }
 
-        /* Capabilities */
-        .capabilities { padding: 6rem 5%; background: var(--bg-surface); position: relative; overflow: hidden; }
-        .cap-header { max-width: 1400px; margin: 0 auto 4rem; }
-        .cap-showcase { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 4rem; align-items: center; }
-        @media (min-width: 900px) { .cap-showcase { grid-template-columns: 1fr 1fr; } }
-        .cap-visual { position: relative; height: 350px; display: none; }
-        @media (min-width: 900px) { .cap-visual { display: block; } }
-        .cap-visual-inner { width: 100%; height: 100%; position: relative; }
-        .cap-orbit { position: absolute; border: 1px solid var(--border); border-radius: 50%; animation: rotate 40s linear infinite; }
-        .cap-orbit-1 { width: 250px; height: 250px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .cap-orbit-2 { width: 320px; height: 320px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-direction: reverse; }
-        .cap-orbit-3 { width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-duration: 60s; }
-        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        .cap-node { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); }
-        .cap-node-1 { top: 0; left: 50%; transform: translateX(-50%); }
-        .cap-node-2 { top: 50%; right: 0; transform: translateY(-50%); background: var(--accent-coral); }
-        .cap-node-3 { bottom: 0; left: 50%; transform: translateX(-50%); background: var(--accent-coral); }
-        .cap-node-4 { top: 50%; left: 0; transform: translateY(-50%); background: var(--accent-gold); }
-        .cap-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: var(--bg-card); border: 1px solid var(--accent-cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .cap-center-inner { width: 60px; height: 60px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-coral)); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .cap-list { list-style: none; }
-        .cap-item { display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.5rem 0; border-bottom: 1px solid var(--border); transition: background 0.1s ease; }
-        .cap-item:hover { background: rgba(0, 229, 255, 0.02); }
-        .cap-item-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--accent-cyan); line-height: 1; min-width: 40px; }
-        .cap-item h4 { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .cap-item p { color: var(--fg-muted); font-size: 0.9rem; }
-
-        /* CTA Section */
-        .cta { padding: 6rem 5%; position: relative; overflow: hidden; text-align: center; }
-        .cta-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at center, var(--bg-surface) 0%, var(--bg-deep) 70%); }
-        .cta-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 300px; background: radial-gradient(ellipse, var(--accent-cyan-dim), transparent 70%); opacity: 0.5; }
+        /* Pricing */
+        .pricing { padding: 6rem 0; background: var(--bg-deep); }
+        .pricing-header { text-align: center; margin-bottom: 4rem; }
+        .pricing-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem; 
+        }
         
-        /* CTA Particles (Fireworks) */
-        .cta-particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 1; }
-        .cta-particle {
-            position: absolute; bottom: 0;
-            width: 4px; height: 4px;
-            background: var(--accent-cyan);
-            border-radius: 50%;
-            opacity: 0;
-            animation: ctaFloatUp 6s linear infinite; 
+        @media (max-width: 1100px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+        .price-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            padding: 1.5rem; border-radius: 12px;
+            display: flex; flex-direction: column; transition: transform 0.2s;
         }
-        @keyframes ctaFloatUp {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            20% { opacity: 1; }
-            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        .price-card:hover { transform: translateY(-5px); border-color: var(--accent-cyan-dim); }
+        
+        .price-tag { font-size: 0.7rem; text-transform: uppercase; color: var(--accent-cyan); letter-spacing: 0.1em; margin-bottom: 0.5rem; font-weight: 700; }
+        .price-title { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .price-amount { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--fg-primary); margin-bottom: 1rem; }
+        .price-desc { font-size: 0.8rem; color: var(--fg-muted); margin-bottom: 1.5rem; line-height: 1.6; flex-grow: 1; }
+        
+        .price-features { list-style: none; margin-bottom: 1.5rem; }
+        .price-features li { padding: 0.3rem 0; font-size: 0.8rem; color: var(--fg-muted); border-bottom: 1px solid var(--border); }
+        .price-features li:last-child { border-bottom: none; }
+
+        /* Footer - FIX: Highest Z-Index relative to content */
+        footer { 
+            padding: 4rem 0 2rem; 
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            margin-top: 4rem;
+            position: relative; 
+            z-index: 50; /* Increased to highest among content elements */
         }
-
-        .cta-content { position: relative; z-index: 10; max-width: 800px; margin: 0 auto; }
-        .cta p { margin-top: 1.5rem; color: var(--fg-muted); font-size: 1.1rem; margin-bottom: 2.5rem; }
-        .cta-actions { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
-
-        /* Footer */
-        footer { padding: 3rem 5%; border-top: 1px solid var(--border); display: flex; justify-content: center; align-items: center; }
-        .footer-logo { height: 36px; width: auto; opacity: 0.8; transition: opacity 0.1s ease; }
-        .footer-logo:hover { opacity: 1; }
-
-        /* Mobile Responsive Utils */
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 3rem; margin-bottom: 3rem; }
+        .footer-col h4 { font-size: 1rem; margin-bottom: 1.5rem; color: var(--fg-primary); }
+        .footer-col a { display: block; color: var(--fg-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 0.8rem; transition: color 0.2s; }
+        .footer-col a:hover { color: var(--accent-cyan); }
+        .footer-bottom { border-top: 1px solid var(--border); padding-top: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .footer-text { color: var(--fg-dim); font-size: 0.8rem; }
+        
         @media (max-width: 768px) {
             .hero-actions { flex-direction: column; }
-            .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
-            .features-header { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .cta-actions { flex-direction: column; }
-            .cap-item { flex-direction: column; gap: 0.5rem; }
+            .btn-3d { width: 100%; text-align: center; }
+            .footer-bottom { flex-direction: column; text-align: center; }
         }
-        button:focus-visible, a:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 3px; }
     </style>
 </head>
-<body>
-    <canvas id="canvas-bg" aria-hidden="true"></canvas>
+<body data-theme="dark">
 
+    <div id="splash-screen">
+        <div class="splash-geo geo-1"></div>
+        <div class="splash-geo geo-2"></div>
+        <div class="splash-loader"></div>
+        <div class="splash-content">
+            <div class="splash-logo-text">E-<span>MICE</span></div>
+            <div class="splash-tagline" data-lang-id="Memulai Pengalaman Baru..." data-lang-en="Initiating New Experience...">Initiating New Experience...</div>
+        </div>
+    </div>
+
+    <canvas id="canvas-bg" aria-hidden="true"></canvas>
     <div class="blob-container" aria-hidden="true">
         <div class="morphing-blob blob-1"></div>
         <div class="morphing-blob blob-2"></div>
     </div>
 
-    <div class="geo-grid" aria-hidden="true"></div>
-
     <nav role="navigation" id="main-nav">
-        <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">
-            <span></span><span></span><span></span>
-        </button>
-        
         <a href="#" class="logo">
             <img src="https://z-cdn-media.chatglm.cn/files/dad7fdbd-3eb4-402a-8a27-161ee5a11e40.png?auth_key=1872527268-991eebdefe0e4d36988f56bce31d4fcd-0-0cbf1018c945247e7f1cc9bfc9549ee4" alt="E-MICE Logo" class="logo-img">
         </a>
         
         <ul class="nav-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#capabilities">Solutions</a></li>
-            <li><a href="#cta">Contact</a></li>
+            <li><a href="#features" data-lang-id="Fitur" data-lang-en="Features">Features</a></li>
+            <li><a href="#pricing" data-lang-id="Harga" data-lang-en="Pricing">Pricing</a></li>
+            <li><a href="#about" data-lang-id="Tentang" data-lang-en="About">About</a></li>
         </ul>
-        <button class="nav-cta">Get Started</button>
+
+        <div class="nav-actions desktop-only">
+            <button class="toggle-btn" onclick="toggleLanguage()"><span id="nav-lang-label">EN</span></button>
+            <button class="toggle-btn" onclick="toggleTheme()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42"/></svg>
+            </button>
+            <button class="btn-3d" onclick="location.href='#pricing'" data-lang-id="Mulai" data-lang-en="Get Started">Get Started</button>
+        </div>
+
+        <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleNav()">
+            <span></span><span></span><span></span>
+        </button>
     </nav>
+
+    <div class="mobile-menu-overlay" id="mobileMenu">
+        <div class="mobile-menu-links">
+            <a href="#features" onclick="toggleNav()" data-lang-id="Fitur" data-lang-en="Features">Features</a>
+            <a href="#pricing" onclick="toggleNav()" data-lang-id="Harga" data-lang-en="Pricing">Pricing</a>
+            <a href="#about" onclick="toggleNav()" data-lang-id="Tentang" data-lang-en="About">About</a>
+        </div>
+        <div style="display:flex; gap: 1rem; flex-direction: column; width: 80%; align-items: center;">
+            <button class="btn-3d" onclick="location.href='#pricing'" data-lang-id="Mulai Sekarang" data-lang-en="Get Started">Get Started</button>
+            <div style="display:flex; gap:1rem;">
+                <button class="toggle-btn" onclick="toggleLanguage()"><span id="mob-lang-label">ID</span> / EN</button>
+                <button class="toggle-btn" onclick="toggleTheme()">Theme</button>
+            </div>
+        </div>
+    </div>
 
     <main>
         <section class="hero">
-            <div class="hero-content">
+            <div class="container">
                 <div class="hero-eyebrow">
-                    <div class="eyebrow-line"></div>
-                    <span class="eyebrow-text">End-to-End Event Platform</span>
+                    <div style="width:40px; height:1px; background:var(--accent-cyan);"></div>
+                    <span style="font-size:0.8rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent-cyan);" data-lang-id="Platform Event End-to-End" data-lang-en="End-to-End Event Platform">End-to-End Event Platform</span>
                 </div>
                 <h1 class="hero-headline">
-                    <span class="line"><span class="word">Complete</span> <span class="word accent">Control</span></span>
-                    <span class="line"><span class="word">End to</span> <span class="word">End</span></span>
+                    <span class="line"><span data-lang-id="Kendali" data-lang-en="Complete">Complete</span> <span style="color:var(--accent-cyan);" data-lang-id="Penuh" data-lang-en="Control">Control</span></span>
+                    <span class="line"><span data-lang-id="Ujung ke" data-lang-en="End to">End to</span> <span data-lang-id="Ujung" data-lang-en="End">End</span></span>
                 </h1>
-                <p class="hero-subtext">
-                    E-Mice adalah solusi definitif bagi pemilik event. Kelola seluruh siklus hidup acara Anda—from landing page hingga laporan keuangan—dalam satu platform terintegrasi.
+                <p class="hero-subtext" data-lang-id="E-Mice bukan sekadar alat bantu, ini adalah fondasi kesuksesan acara Anda. Kami menghadirkan ekosistem lengkap yang mengubah kekacauan logistik menjadi simfoni yang teratur. Dari detik pertama promosi hingga laporan penutup, Anda mengendalikan segalanya dalam satu genggaman." data-lang-en="E-Mice isn't just a tool; it's the foundation of your event's success. We deliver a complete ecosystem that transforms logistical chaos into an organized symphony. From the first promotional moment to the closing report, you control everything in the palm of your hand.">
+                    E-Mice isn't just a tool; it's the foundation of your event's success. We deliver a complete ecosystem that transforms logistical chaos into an organized symphony. From the first promotional moment to the closing report, you control everything in the palm of your hand.
                 </p>
                 <div class="hero-actions">
-                    <button class="btn-primary">Start Managing Events</button>
-                    <button class="btn-secondary">
-                        View Demo
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </button>
+                    <button class="btn-3d" data-lang-id="Kelola Event" data-lang-en="Manage Event">Manage Event</button>
+                    <button class="btn-3d secondary" data-lang-id="Lihat Demo" data-lang-en="View Demo">View Demo</button>
                 </div>
-            </div>
-            <div class="scroll-indicator">
-                <span class="scroll-text">Scroll</span>
-                <div class="scroll-line"></div>
             </div>
         </section>
 
         <section class="stats-bar">
-            <div class="stats-grid">
-                <div class="stat-item anim-fade-up"><div class="stat-number">8<span class="unit">Mods</span></div><div class="stat-label">Integrated Features</div></div>
-                <div class="stat-item anim-fade-up"><div class="stat-number">Multi</div><div class="stat-label">Payment Channels</div></div>
-                <div class="stat-item anim-fade-up"><div class="stat-number">Real<span class="unit">-time</span></div><div class="stat-label">Analytics Sync</div></div>
-                <div class="stat-item anim-fade-up"><div class="stat-number">Full</div><div class="stat-label">Custom Branding</div></div>
-            </div>
-        </section>
-
-        <section id="features" class="features">
-            <div class="features-header">
-                <h2 class="section-title anim-fade-up">All-in-One<br>Solution</h2>
-                <p class="anim-fade-up">E-Mice menyediakan 8 pilar utama untuk memastikan setiap aspek event Anda berjalan lancar, terukur, dan terkontrol penuh.</p>
-            </div>
-            <div class="features-grid">
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div><h3 class="card-title">Landing Page Event</h3><p>Bangun halaman promosi profesional dan responsif dalam hitungan menit tanpa coding.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h3 class="card-title">Registration</h3><p>Sistem pendaftaran online yang cepat, aman, dan mudah dikelola untuk semua tipe peserta.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><h3 class="card-title">Payment</h3><p>Integrasi gateway pembayaran lengkap untuk transaksi tiket dan sponsor secara real-time.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div><h3 class="card-title">Dashboard Analytic</h3><p>Visualisasi data penjualan, kunjungan, dan interaksi peserta secara real-time.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><h3 class="card-title">Project Management</h3><p>Kelola timeline, tim, dan milestone proyek event Anda dalam satu dashboard terpusat.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3 class="card-title">Task Management</h3><p>Distribusi tugas otomatis ke tim, tracking progress, dan pengingat deadline yang terintegrasi.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3 class="card-title">RAB Management</h3><p>Kelola Rencana Anggaran Biaya (RAB) dengan tracking pengeluaran dan estimasi biaya akurat.</p></article>
-                <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><h3 class="card-title">Report End to End</h3><p>Laporan lengkap dari awal perencanaan hingga evaluasi pasca event dalam satu klik.</p></article>
-            </div>
-        </section>
-
-        <section id="capabilities" class="capabilities">
-            <div class="cap-header"><h2 class="section-title anim-fade-up">Why Choose<br>E-Mice?</h2></div>
-            <div class="cap-showcase">
-                <div class="cap-visual anim-fade-up"><div class="cap-visual-inner"><div class="cap-orbit cap-orbit-1"><div class="cap-node cap-node-1"></div></div><div class="cap-orbit cap-orbit-2"><div class="cap-node cap-node-2"></div></div><div class="cap-orbit cap-orbit-3"><div class="cap-node cap-node-3"></div><div class="cap-node cap-node-4"></div></div><div class="cap-center"><div class="cap-center-inner"></div></div></div></div>
-                <div class="cap-content anim-fade-up">
-                    <ul class="cap-list">
-                        <li class="cap-item anim-fade-up"><span class="cap-item-num">01</span><div><h4>Terintegrasi Penuh</h4><p>Satu platform untuk semua kebutuhan, dari marketing hingga laporan keuangan.</p></div></li>
-                        <li class="cap-item anim-fade-up"><span class="cap-item-num">02</span><div><h4>Otomasi Cerdas</h4><p>Hemat waktu dengan otomasi tugas rutin dan notifikasi real-time.</p></div></li>
-                        <li class="cap-item anim-fade-up"><span class="cap-item-num">03</span><div><h4>Kontrol Anggaran</h4><p>Tracking RAB dan pengeluaran secara transparan dan terukur.</p></div></li>
-                        <li class="cap-item anim-fade-up"><span class="cap-item-num">04</span><div><h4>Skalabilitas</h4><p>Cocok untuk event kecil hingga konferensi berskala besar.</p></div></li>
-                    </ul>
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-item anim-fade-up"><div class="stat-number">8<span style="font-size:1rem; color:var(--accent-cyan);">Mods</span></div><div class="stat-label" data-lang-id="Fitur Terintegrasi" data-lang-en="Integrated Features">Integrated Features</div></div>
+                    <div class="stat-item anim-fade-up"><div class="stat-number" data-lang-id="Multi" data-lang-en="Multi">Multi</div><div class="stat-label" data-lang-id="Pembayaran" data-lang-en="Payment">Payment</div></div>
+                    <div class="stat-item anim-fade-up"><div class="stat-number" data-lang-id="Real-time" data-lang-en="Real-time">Real-time</div><div class="stat-label">Sync</div></div>
+                    <div class="stat-item anim-fade-up"><div class="stat-number" data-lang-id="Penuh" data-lang-en="Full">Full</div><div class="stat-label" data-lang-id="Kustomisasi" data-lang-en="Customizable">Customizable</div></div>
                 </div>
             </div>
         </section>
 
-        <section id="cta" class="cta">
-            <div class="cta-bg"></div>
-            <div class="cta-glow"></div>
-            <div class="cta-particles" id="cta-particles"></div>
-            <div class="cta-content">
-                <h2 class="section-title anim-fade-up">Ready to Simplify<br>Your Event?</h2>
-                <p class="anim-fade-up">Solusi terpercaya untuk kesuksesan event Anda. Mulai kelola event dengan lebih efisien hari ini.</p>
-                <div class="cta-actions anim-fade-up">
-                    <button class="btn-primary">Create Your Event</button>
-                    <button class="btn-secondary">Contact Sales</button>
+        <section id="features" class="features">
+            <div class="container">
+                <div class="features-header">
+                    <h2 class="section-title anim-fade-up" data-lang-id="Solusi<br>Semua-in-Satu" data-lang-en="All-in-One<br>Solution">All-in-One<br>Solution</h2>
+                    <p class="anim-fade-up" data-lang-id="Kami memahami bahwa event adalah cermin reputasi Anda. Karena itu, E-Mice hadir dengan 8 pilar fitur yang dirancang untuk menutupi setiap celah, meminimalkan risiko, dan memaksimalkan dampak. Tak ada lagi data tersebar, tak ada lagi komunikasi yang terlewat." data-lang-en="We understand that your event is a reflection of your reputation. That's why E-Mice comes with 8 core pillars designed to cover every gap, minimize risk, and maximize impact. No more scattered data, no more missed communication.">
+                        We understand that your event is a reflection of your reputation. That's why E-Mice comes with 8 core pillars designed to cover every gap, minimize risk, and maximize impact.
+                    </p>
+                </div>
+                <div class="features-grid">
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div><h3 class="card-title">Landing Page</h3><p data-lang-id="Kesempatan pertama untuk memikat audiens. Ciptakan halaman web yang memukau dalam hitungan menit, tanpa perlu sentuhan kode." data-lang-en="The first opportunity to captivate your audience. Create stunning web pages in minutes without writing a single line of code.">The first opportunity to captivate your audience. Create stunning web pages in minutes without writing a single line of code.</p></article>
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><h3 class="card-title">Registration</h3><p data-lang-id="Proses pendaftaran yang rumit hanya akan mengusir peserta. Kami membuatnya semulus angin—cepat, aman, dan ramah pengguna." data-lang-en="A complicated registration process only drives attendees away. We make it smooth as breeze—fast, secure, and user-friendly.">A complicated registration process only drives attendees away. We make it smooth as breeze—fast, secure, and user-friendly.</p></article>
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/></svg></div><h3 class="card-title">Payment</h3><p data-lang-id="Dana adalah darah event Anda. Dapatkan ketenangan pikiran dengan integrasi gateway pembayaran yang aman dan akurat." data-lang-en="Funds are the lifeblood of your event. Gain peace of mind with secure and accurate payment gateway integration.">Funds are the lifeblood of your event. Gain peace of mind with secure and accurate payment gateway integration.</p></article>
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/></svg></div><h3 class="card-title">Analytics</h3><p data-lang-id="Tidak perlu menebak nebak. Dapatkan visibilitas penuh melalui visualisasi data penjualan dan perilaku peserta secara real-time." data-lang-en="No more guessing games. Gain full visibility through real-time visualization of sales data and attendee behavior.">No more guessing games. Gain full visibility through real-time visualization of sales data and attendee behavior.</p></article>
+                    
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><h3 class="card-title">Project Management</h3><p data-lang-id="Kumpulkan seluruh tim dalam satu komando pusat. Kelola timeline, bagi tugas, dan pantau progres milestone dengan mudah." data-lang-en="Bring your entire team into one central command. Manage timelines, assign tasks, and monitor milestone progress easily.">Bring your entire team into one central command. Manage timelines, assign tasks, and monitor milestone progress easily.</p></article>
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg></div><h3 class="card-title">Task Management</h3><p data-lang-id="Detail kecil sering kali menjadi penentu keberhasilan. Fitur ini mendistribusikan tugas secara otomatis dan mengingatkan deadline." data-lang-en="Small details often determine success. This feature automatically distributes tasks and reminds deadlines.">Small details often determine success. This feature automatically distributes tasks and reminds deadlines.</p></article>
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3 class="card-title">RAB Management</h3><p data-lang-id="Keuangan yang tidak terkontrol adalah bencana. Dengan fitur RAB, Anda bisa melacak Rencana Anggaran Biaya secara transparan." data-lang-en="Uncontrolled finances are a disaster. With RAB feature, you can track Budget Plans transparently.">Uncontrolled finances are a disaster. With RAB feature, you can track Budget Plans transparently.</p></article>
+                    <article class="feature-card anim-fade-up"><div class="feature-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div><h3 class="card-title">Reports</h3><p data-lang-id="Penutupan yang sempurna. Hasilkan laporan profesional dari perencanaan hingga evaluasi pasca event hanya dengan satu klik." data-lang-en="A perfect closure. Generate professional reports from planning to post-event evaluation with just one click.">A perfect closure. Generate professional reports from planning to post-event evaluation with just one click.</p></article>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="pricing">
+            <div class="container">
+                <div class="pricing-header">
+                    <h2 class="section-title anim-fade-up" data-lang-id="Investasi <br>Cerdas" data-lang-en="Smart <br>Investment">Smart <br>Investment</h2>
+                </div>
+                
+                <div class="pricing-grid">
+                    <div class="price-card anim-fade-up">
+                        <span class="price-tag" data-lang-id="Paket Utama" data-lang-en="Essential Package">Essential Package</span>
+                        <h3 class="price-title">Essential</h3>
+                        <div class="price-amount">Rp 10.000.000</div>
+                        <p class="price-desc" data-lang-id="Platform inti sebagai pusat kendali informasi dan registrasi event Anda. Biaya perpanjangan Rp 2.000.000/bulan setelah 3 bulan." data-lang-en="The core platform as the control center for your event information and registration. Renewal fee Rp 2.000.000/month after 3 months.">
+                            The core platform as the control center for your event information and registration. Renewal fee Rp 2.000.000/month after 3 months.
+                        </p>
+                        <ul class="price-features">
+                            <li data-lang-id="Header & Visual (Poster, Countdown)" data-lang-en="Header & Visual (Poster, Countdown)">Header & Visual</li>
+                            <li data-lang-id="Konten (Rundown, Galeri 12 Foto)" data-lang-en="Content (Rundown, 12 Photo Gallery)">Content (Rundown, Gallery)</li>
+                            <li data-lang-id="Interaksi (Artikel, Tombol WA)" data-lang-en="Interaction (Article, WA Button)">Interaction (Article, WA Button)</li>
+                        </ul>
+                        <button class="btn-3d" data-lang-id="Pilih Paket" data-lang-en="Select">Select</button>
+                    </div>
+
+                    <div class="price-card anim-fade-up">
+                        <span class="price-tag">Add On System</span>
+                        <h3 class="price-title" data-lang-id="Kebutuhan Teknis" data-lang-en="System Add-ons">System Add-ons</h3>
+                        <div class="price-amount" style="font-size:1rem; color:var(--fg-muted);" data-lang-id="Harga Custom" data-lang-en="Custom Quote">Custom Quote</div>
+                        <p class="price-desc" data-lang-id="Tingkatkan pengalaman peserta dengan teknologi canggih. Sediakan fitur pemilihan kursi, denah interaktif, hingga generator twibbon." data-lang-en="Enhance attendee experience with advanced technology. Provide seat selection features, interactive maps, and twibbon generators.">
+                            Enhance attendee experience with advanced technology. Provide seat selection features, interactive maps, and twibbon generators.
+                        </p>
+                        <ul class="price-features">
+                            <li data-lang-id="Seating Arrangement" data-lang-en="Seating Arrangement">Seating Arrangement</li>
+                            <li data-lang-id="Mapping Area Event" data-lang-en="Event Area Mapping">Event Area Mapping</li>
+                            <li data-lang-id="Generator Twibbon" data-lang-en="Twibbon Generator">Twibbon Generator</li>
+                        </ul>
+                        <button class="btn-3d secondary" data-lang-id="Konsultasi" data-lang-en="Consult">Consult</button>
+                    </div>
+
+                    <div class="price-card anim-fade-up">
+                        <span class="price-tag">Add On Support</span>
+                        <h3 class="price-title" data-lang-id="Dukungan On-Site" data-lang-en="On-Site Support">On-Site Support</h3>
+                        <div class="price-amount" style="font-size:1rem; color:var(--fg-muted);" data-lang-id="Harga Custom" data-lang-en="Custom Quote">Custom Quote</div>
+                        <p class="price-desc" data-lang-id="Serahkan urusan teknis di hari-H kepada tim profesional kami. Dari registrasi ulang dengan QR Scan hingga dukungan IT." data-lang-en="Leave technical matters on D-Day to our professional team. From re-registration with QR Scan to IT support.">
+                            Leave technical matters on D-Day to our professional team. From re-registration with QR Scan to IT support.
+                        </p>
+                        <ul class="price-features">
+                            <li data-lang-id="Small Event (2 Staf, 1 IT)" data-lang-en="Small Event (2 Staff, 1 IT)">Small Event (2 Staff, 1 IT)</li>
+                            <li data-lang-id="Medium Event (4 Staf)" data-lang-en="Medium Event (4 Staff)">Medium Event (4 Staff)</li>
+                            <li data-lang-id="Custom Package" data-lang-en="Custom Package">Custom Package</li>
+                        </ul>
+                        <button class="btn-3d secondary" data-lang-id="Paket Kustom" data-lang-en="Custom">Custom</button>
+                    </div>
+
+                    <div class="price-card anim-fade-up">
+                        <span class="price-tag">Add On Digital</span>
+                        <h3 class="price-title" data-lang-id="Digital Marketing" data-lang-en="Digital Marketing">Digital Marketing</h3>
+                        <div class="price-amount" style="font-size:1rem; color:var(--fg-muted);" data-lang-id="Harga Custom" data-lang-en="Custom Quote">Custom Quote</div>
+                        <p class="price-desc" data-lang-id="Jangan biarkan event Anda sepi peminat. Jalankan kampanye viral via WhatsApp, email blasting profesional, hingga pengelolaan konten." data-lang-en="Don't let your event go unnoticed. Run viral campaigns via WhatsApp, professional email blasting, and content management.">
+                            Don't let your event go unnoticed. Run viral campaigns via WhatsApp, professional email blasting, and content management.
+                        </p>
+                        <ul class="price-features">
+                            <li data-lang-id="WA Campaign (1.000 Blast)" data-lang-en="WA Campaign (1.000 Blast)">WA Campaign (1.000 Blast)</li>
+                            <li data-lang-id="Email Blasting" data-lang-en="Email Blasting">Email Blasting</li>
+                            <li data-lang-id="Content Management" data-lang-en="Content Management">Content Management</li>
+                        </ul>
+                        <button class="btn-3d secondary" data-lang-id="Penawaran" data-lang-en="Quote">Quote</button>
+                    </div>
+
                 </div>
             </div>
         </section>
     </main>
 
-    <footer>
-        <img src="https://z-cdn-media.chatglm.cn/files/dad7fdbd-3eb4-402a-8a27-161ee5a11e40.png?auth_key=1872527268-991eebdefe0e4d36988f56bce31d4fcd-0-0cbf1018c945247e7f1cc9bfc9549ee4" alt="E-MICE Logo" class="footer-logo">
+    <footer id="about">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>E-Mice</h4>
+                    <p style="color:var(--fg-muted); font-size:0.9rem;" data-lang-id="Platform manajemen event end-to-end terbaik di Indonesia." data-lang-en="The best end-to-end event management platform in Indonesia.">The best end-to-end event management platform in Indonesia.</p>
+                </div>
+                <div class="footer-col">
+                    <h4 data-lang-id="Produk" data-lang-en="Product">Product</h4>
+                    <a href="#features" data-lang-id="Fitur" data-lang-en="Features">Features</a>
+                    <a href="#pricing" data-lang-id="Harga" data-lang-en="Pricing">Pricing</a>
+                </div>
+                <div class="footer-col">
+                    <h4 data-lang-id="Perusahaan" data-lang-en="Company">Company</h4>
+                    <a href="#" data-lang-id="Tentang Kami" data-lang-en="About Us">About Us</a>
+                    <a href="#" data-lang-id="Karir" data-lang-en="Careers">Careers</a>
+                </div>
+                <div class="footer-col">
+                    <h4 data-lang-id="Bantuan" data-lang-en="Support">Support</h4>
+                    <a href="#" data-lang-id="Pusat Bantuan" data-lang-en="Help Center">Help Center</a>
+                    <a href="#" data-lang-id="Hubungi Kami" data-lang-en="Contact Us">Contact Us</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span class="footer-text">© 2024 E-Mice. All rights reserved.</span>
+                <div style="display:flex; gap:1rem; align-items:center;">
+                    <button class="toggle-btn" onclick="toggleLanguage()"><span id="footer-lang-label">ID</span> / EN</button>
+                    <button class="toggle-btn" onclick="toggleTheme()"><span data-lang-id="Mode Terang" data-lang-en="Light Mode">Light Mode</span></button>
+                </div>
+            </div>
+        </div>
     </footer>
 
     <script>
-        // --- Canvas Background (Optimized) ---
+        // --- SPLASH SCREEN ---
+        window.onload = () => {
+            const splash = document.getElementById('splash-screen');
+            setTimeout(() => { splash.classList.add('hide'); }, 3500);
+        };
+
+        // --- CANVAS ---
         const canvas = document.getElementById('canvas-bg');
         const ctx = canvas.getContext('2d');
         let width, height, particles, mouse;
-        
         function initVars() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
             mouse = { x: width / 2, y: height / 2 };
             particles = [];
-            // Fewer particles to balance heavy blur GPU load
             const count = width < 768 ? 0 : 25; 
-            for (let i = 0; i < count; i++) {
-                particles.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    size: Math.random() * 2 + 0.5,
-                    speedX: (Math.random() - 0.5),
-                    speedY: (Math.random() - 0.5),
-                    color: `rgba(0, 229, 255, ${Math.random() * 0.4 + 0.2})`
-                });
-            }
+            for (let i = 0; i < count; i++) particles.push({ x: Math.random() * width, y: Math.random() * height, size: Math.random() * 2 + 0.5, speedX: (Math.random() - 0.5), speedY: (Math.random() - 0.5), color: `rgba(0, 229, 255, ${Math.random() * 0.4 + 0.2})` });
         }
-
         function animateCanvas() {
             if (particles.length === 0) return;
-            
             ctx.fillStyle = 'rgba(7, 8, 12, 0.2)';
             ctx.fillRect(0, 0, width, height);
-
             particles.forEach(p => {
-                const dx = mouse.x - p.x;
-                const dy = mouse.y - p.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < 80) {
-                    p.x -= dx * 0.02;
-                    p.y -= dy * 0.02;
-                }
-
-                p.x += p.speedX;
-                p.y += p.speedY;
-
-                if (p.x < 0) p.x = width;
-                if (p.x > width) p.x = 0;
-                if (p.y < 0) p.y = height;
-                if (p.y > height) p.y = 0;
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
+                const dx = mouse.x - p.x; const dy = mouse.y - p.y; const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < 80) { p.x -= dx * 0.02; p.y -= dy * 0.02; }
+                p.x += p.speedX; p.y += p.speedY;
+                if (p.x < 0) p.x = width; if (p.x > width) p.x = 0; if (p.y < 0) p.y = height; if (p.y > height) p.y = 0;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
             });
             requestAnimationFrame(animateCanvas);
         }
-
-        initVars();
-        if (particles.length > 0) animateCanvas();
-
+        initVars(); animateCanvas();
         window.addEventListener('resize', initVars);
         window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-        // --- CTA Fireworks ---
-        const ctaContainer = document.getElementById('cta-particles');
-        function createCtaParticles() {
-            ctaContainer.innerHTML = '';
-            const colors = ['#00e5ff', '#ff5e3a', '#ffc857'];
-            for (let i = 0; i < 20; i++) {
-                const p = document.createElement('div');
-                p.className = 'cta-particle';
-                p.style.left = Math.random() * 100 + '%';
-                p.style.background = colors[Math.floor(Math.random() * colors.length)];
-                p.style.animationDelay = Math.random() * 3 + 's';
-                p.style.animationDuration = (Math.random() * 3 + 4) + 's';
-                ctaContainer.appendChild(p);
-            }
-        }
-        createCtaParticles();
-
-        // --- Scroll Animation (Fast Stagger) ---
+        // --- SCROLL ANIMATIONS ---
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -499,34 +501,41 @@
                 }
             });
         }, { threshold: 0.1 });
-
         const elements = document.querySelectorAll('.anim-fade-up');
-        let stagger = 0;
-        let lastSection = null;
+        let stagger = 0; let lastSection = null;
         elements.forEach((el) => {
             const section = el.closest('section');
-            if (section !== lastSection) {
-                lastSection = section;
-                stagger = 0;
-            }
-            el.dataset.delay = stagger;
-            stagger += 10; 
+            if (section !== lastSection) { lastSection = section; stagger = 0; }
+            el.dataset.delay = stagger; stagger += 10;
             observer.observe(el);
         });
 
-        // --- Navbar Logic ---
+        // --- NAVBAR LOGIC ---
         const nav = document.getElementById('main-nav');
-        window.addEventListener('scroll', () => {
-            nav.classList.toggle('scrolled', window.scrollY > 50);
-        });
+        const mobileMenu = document.getElementById('mobileMenu');
+        window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 50));
+        function toggleNav() { mobileMenu.classList.toggle('active'); nav.classList.toggle('nav-open'); }
 
-        function toggleNav() {
-            nav.classList.toggle('nav-open');
+        // --- THEME TOGGLE ---
+        function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+
+        // --- LANGUAGE TOGGLE ---
+        let currentLang = 'en';
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'id' : 'en';
+            document.querySelectorAll('#nav-lang-label, #mob-lang-label, #footer-lang-label').forEach(el => el.textContent = currentLang === 'en' ? 'ID' : 'EN');
+            document.querySelectorAll('[data-lang-en], [data-lang-id]').forEach(el => {
+                const text = el.getAttribute(`data-lang-${currentLang}`);
+                if (text) { text.includes('<br>') ? el.innerHTML = text : el.textContent = text; }
+            });
         }
 
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', () => {
-                nav.classList.remove('nav-open');
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) { target.scrollIntoView({ behavior: 'smooth' }); if(mobileMenu.classList.contains('active')) toggleNav(); }
             });
         });
     </script>
