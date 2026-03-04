@@ -55,20 +55,51 @@
         .hero-headline { font-weight: 800; font-size: clamp(2.2rem, 7vw, 5.5rem); line-height: 0.95; letter-spacing: -0.04em; text-transform: uppercase; }
         .section-title { font-weight: 700; font-size: clamp(2rem, 5vw, 4.5rem); line-height: 1.05; letter-spacing: -0.03em; }
 
-        /* --- SPLASH SCREEN --- */
+        /* --- SPLASH SCREEN: SPLIT REVEAL EFFECT --- */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-deep); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            overflow: hidden; transition: opacity 0.8s ease, visibility 0.8s ease;
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+            pointer-events: none; /* Allow clicks after animation */
         }
-        .splash-content { position: relative; z-index: 2; text-align: center; }
+        
+        /* The split layers */
+        .splash-layer {
+            position: absolute; width: 100%; height: 50%;
+            background: var(--bg-deep);
+            display: flex; justify-content: center; align-items: center;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1); /* Smooth open */
+            z-index: 2;
+        }
+        .splash-layer-top { top: 0; }
+        .splash-layer-bottom { bottom: 0; }
+
+        /* Animation State: Layers slide away */
+        #splash-screen.reveal .splash-layer-top { transform: translateY(-100%); }
+        #splash-screen.reveal .splash-layer-bottom { transform: translateY(100%); }
+
+        /* The Logo Content Container */
+        .splash-content { 
+            position: relative; z-index: 3; text-align: center;
+            opacity: 1;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        /* Animation State: Content fades out quickly before layers open */
+        #splash-screen.reveal .splash-content {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
         .splash-logo-text { 
             font-family: 'Syne', sans-serif; font-size: 5rem; font-weight: 800; color: var(--fg-primary); 
             margin-bottom: 1rem; letter-spacing: -3px;
             animation: textGlitch 3s infinite alternate;
         }
         .splash-logo-text span { color: var(--accent-cyan); }
+        
         .splash-tagline {
             font-size: 1rem; letter-spacing: 0.2em; text-transform: uppercase;
             color: var(--fg-muted); opacity: 0; animation: fadeInUp 1s ease 1s forwards;
@@ -77,18 +108,24 @@
             position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
             background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
             animation: loadingBar 3s ease-in-out forwards;
+            z-index: 4; /* Above layers */
         }
-        .splash-geo {
-            position: absolute; width: 200px; height: 200px; border: 1px solid var(--border); border-radius: 50%; opacity: 0.1;
-        }
-        .geo-1 { top: 10%; left: 10%; animation: rotateGeo 10s linear infinite; }
-        .geo-2 { bottom: 20%; right: 15%; width: 300px; height: 300px; animation: rotateGeo 15s linear infinite reverse; }
 
         @keyframes loadingBar { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
         @keyframes textGlitch { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); text-shadow: 0 0 20px var(--accent-cyan); } }
         @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        
+        /* Geometric accents inside splash */
+        .splash-geo {
+            position: absolute; width: 200px; height: 200px; border: 1px solid var(--border); border-radius: 50%; opacity: 0.1;
+            pointer-events: none;
+        }
+        .geo-1 { top: 10%; left: 10%; animation: rotateGeo 10s linear infinite; }
+        .geo-2 { bottom: 20%; right: 15%; width: 300px; height: 300px; animation: rotateGeo 15s linear infinite reverse; }
         @keyframes rotateGeo { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #splash-screen.hide { opacity: 0; visibility: hidden; }
+
+        /* Hide splash completely after animation */
+        #splash-screen.hide { display: none; }
 
         /* Background Effects */
         #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; transition: opacity 0.5s; }
@@ -215,14 +252,14 @@
         .price-features li { padding: 0.3rem 0; font-size: 0.8rem; color: var(--fg-muted); border-bottom: 1px solid var(--border); }
         .price-features li:last-child { border-bottom: none; }
 
-        /* Footer - FIX: Highest Z-Index relative to content */
+        /* Footer */
         footer { 
             padding: 4rem 0 2rem; 
             background: var(--bg-surface);
             border-top: 1px solid var(--border);
             margin-top: 4rem;
             position: relative; 
-            z-index: 50; /* Increased to highest among content elements */
+            z-index: 50;
         }
         .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 3rem; margin-bottom: 3rem; }
         .footer-col h4 { font-size: 1rem; margin-bottom: 1.5rem; color: var(--fg-primary); }
@@ -240,14 +277,21 @@
 </head>
 <body data-theme="dark">
 
+    <!-- Splash Screen with Split Layers -->
     <div id="splash-screen">
-        <div class="splash-geo geo-1"></div>
-        <div class="splash-geo geo-2"></div>
-        <div class="splash-loader"></div>
+        <!-- Top Half -->
+        <div class="splash-layer splash-layer-top"></div>
+        <!-- Bottom Half -->
+        <div class="splash-layer splash-layer-bottom"></div>
+        
+        <!-- Content -->
         <div class="splash-content">
+            <div class="splash-geo geo-1"></div>
+            <div class="splash-geo geo-2"></div>
             <div class="splash-logo-text">E-<span>MICE</span></div>
             <div class="splash-tagline" data-lang-id="Memulai Pengalaman Baru..." data-lang-en="Initiating New Experience...">Initiating New Experience...</div>
         </div>
+        <div class="splash-loader"></div>
     </div>
 
     <canvas id="canvas-bg" aria-hidden="true"></canvas>
@@ -455,10 +499,18 @@
     </footer>
 
     <script>
-        // --- SPLASH SCREEN ---
+        // --- SPLASH SCREEN REVEAL LOGIC ---
         window.onload = () => {
             const splash = document.getElementById('splash-screen');
-            setTimeout(() => { splash.classList.add('hide'); }, 3500);
+            // 1. Wait for loading bar to finish (3s)
+            // 2. Add 'reveal' class to trigger the split animation
+            // 3. Wait for animation (0.8s) then hide completely
+            setTimeout(() => {
+                splash.classList.add('reveal');
+                setTimeout(() => {
+                    splash.classList.add('hide');
+                }, 800); // Matches CSS transition duration
+            }, 3000);
         };
 
         // --- CANVAS ---
@@ -471,7 +523,7 @@
             mouse = { x: width / 2, y: height / 2 };
             particles = [];
             const count = width < 768 ? 0 : 25; 
-            for (let i = 0; i < count; i++) particles.push({ x: Math.random() * width, y: Math.random() * height, size: Math.random() * 2 + 0.5, speedX: (Math.random() - 0.5), speedY: (Math.random() - 0.5), color: `rgba(0, 229, 255, ${Math.random() * 0.4 + 0.2})` });
+            for (let i = 0; i < count; i++) particles.push({ x: Math.random() * width, y: Math.random() * height, size: Math.random() * 2 + 0.5, speedX: (Math.random() - 0.5), speedY: (Math.random() - 0.5), color: `rgba(0, 229, 255, ${Math.random() * 0.4 + 0.2}` });
         }
         function animateCanvas() {
             if (particles.length === 0) return;
